@@ -1,8 +1,11 @@
 
 import java.io.File;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -33,7 +36,13 @@ public class Predictor {
     public static List<User> users;
     public static List<Application> applications;
     
-    public static final int K = 5;
+    public static final String DATE = "2012-04-09 00:00:00";
+    
+    static SimpleDateFormat simpleDateFormat = null;
+    static Date date = null;
+    
+    public static final int K = 100;
+    public static double averageDistance = 0;
 
     /**
      * A method that will iterate the zip codes provided by zips.tsv 
@@ -53,6 +62,69 @@ public class Predictor {
         }
         
         return zipCodeMap;
+    }
+
+    /**
+     * A method that will split the jobs into T1 and T2
+     * @param jobs
+     * @return an object with two lists holding the range of jobs
+     * T1 and T2
+     */
+    private static JobsInDateRange getJobsInDateRanges(List<Job> jobs) {
+        JobsInDateRange jobsInDateRange = new JobsInDateRange();
+        List<Job> jobsInDateRangeT1 = jobsInDateRange.getJobsInDateRangeT1();
+        List<Job> jobsInDateRangeT2 = jobsInDateRange.getJobsInDateRangeT2();
+        
+        Date jobStartDate = null;
+        Date jobEndDate = null;
+        try {
+            simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            date = simpleDateFormat.parse(DATE);
+            
+            for(Job job : jobs) {
+                jobStartDate = simpleDateFormat.parse(job.getStartDate());
+                jobEndDate = simpleDateFormat.parse(job.getEndDate());
+                
+                if(jobStartDate.before(date)) {
+                    jobsInDateRangeT1.add(job);
+                } else if(jobStartDate.after(date)) {
+                    jobsInDateRangeT2.add(job);
+                } else if(jobStartDate.equals(date)) {
+                    jobsInDateRangeT1.add(job);
+                }
+            }
+            System.out.println(date.toString());
+            
+        } catch (ParseException e) {
+            System.err.println(e.getMessage());
+        }
+        
+        return jobsInDateRange;
+    }
+
+    private static List<Job> getJobsInT2(List<Job> jobs) {
+        List<Job> jobsInDateRange = new ArrayList<Job>();
+        Date jobStartDate = null;
+        Date jobEndDate = null;
+        try {
+            simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            date = simpleDateFormat.parse(DATE);
+            
+            for(Job job : jobs) {
+                jobStartDate = simpleDateFormat.parse(job.getStartDate());
+                jobEndDate = simpleDateFormat.parse(job.getEndDate());
+                
+                if(jobStartDate.after(date)) {
+                    jobsInDateRange.add(job);
+                }
+            }
+            System.out.println(date.toString());
+            
+        } catch (ParseException e) {
+            System.err.println(e.getMessage());
+        }
+        
+        return jobsInDateRange;
     }
     
     public Predictor() {
@@ -172,7 +244,8 @@ public class Predictor {
     }
     
     /**
-     * 
+     * This method will determine the subset of users one
+     * based off of users_two.tsv and users.tsv we find the difference
      * @param userIdToUserMap
      * @param users
      * @param usersTwo
@@ -255,10 +328,6 @@ public class Predictor {
         double classificationUserLong = 0.0;
      
         for(User user : users) {
-            
-            if(count == 28598) {
-                 System.out.println("Halting execution at iteration: " + count);
-            }
             neighbor = new Neighbor();
             zipCodeUser = user.getZipCode();
             System.out.println(zipCodeUser);
@@ -284,6 +353,11 @@ public class Predictor {
                     zipCodeUserObj = zipcodeToLatLong.get(cleanedZipCode);
                     latUser = zipCodeUserObj.getLatitude();
                     longUser = zipCodeUserObj.getLongitude();
+                } else if(user.getCountry().equals("CA")) {
+                    if(user.getCity().equals("Brampton")) {
+                        latUser = 43.68590;
+                        longUser = -79.75994;
+                    }
                 } else {
                     zipCodeUserObj = zipcodeToLatLong.get(zipCodeUser);
                     latUser = zipCodeUserObj.getLatitude();
@@ -311,6 +385,8 @@ public class Predictor {
             System.out.println("Iteration: " + count);
         }
        
+        // sorting the distances of neighbors in descending order
+        Collections.sort(distances, Neighbor.DESCENDING_COMPARATOR);
         
         return distances;
     }
@@ -336,6 +412,41 @@ public class Predictor {
         return populatedUsersTwo;
     }
     
+    /**
+     * This method takes in all the distances from a classification instance
+     * to all the other user instances
+     * @param distances
+     * @return the list of k nearest neighbors. K is driven by a constant 
+     */
+    private static List<Neighbor> getNearestNeighbors(List<Neighbor> distances) {
+        ArrayList<Neighbor> neighbors = new ArrayList<Neighbor>();
+		
+        for(int i = 0; i < K; i++) {
+                averageDistance += distances.get(i).getDistance();
+                neighbors.add(distances.get(i));
+        }
+		
+        return neighbors;
+    }
+    
+    /**
+     * A method that will find the jobs the nearest neighbors of the
+     * classification instance applied for
+     * @param neighbors
+     * @return map of nearest neighbors and all the jobs they applied for
+     */
+    private static Map<User, List<Job>> getJobsNeighborsAppliedFor(List<Neighbor> neighbors) {
+        Map<User, List<Job>> jobsAppliedForMap = new HashMap<User, List<Job>>();
+        
+        for(Neighbor neighbor : neighbors) {
+            User user = neighbor.getUser();
+            List<Job> jobsAppliedFor = userToJobAppliedMap.get(user);
+            jobsAppliedForMap.put(user, jobsAppliedFor);
+        }
+        
+        return jobsAppliedForMap;
+    }
+    
     public static void main(String[] args) {
         TsvFileParser tsvFileParser = new TsvFileParser();
         List<Application> applications = new ArrayList<Application>();
@@ -345,8 +456,12 @@ public class Predictor {
         List<ZipCode> zipCodes = new ArrayList<ZipCode>();
         List<Neighbor> distances = null;
         List<User> populatedUsersTwo = null;
-        
-        
+        List<Neighbor> neighbors = null;
+        List<Job> jobsInT1 = null;
+        List<Job> jobsInT2 = null;
+        Map<User, List<Job>> jobsWhoNeighborsAppliedForMap = null;
+        JobsInDateRange jobsInDateRanges = null;
+ 
         User classificationUser = null;
         
         
@@ -376,8 +491,12 @@ public class Predictor {
             zipcodeToLatLong = MapZipCodeToLatLng(zipCodes);
             populatedUsersTwo = populateUserTwo(usersTwo);
             
+            jobsInDateRanges = getJobsInDateRanges(jobs);
             classificationUser = extractIndividualInstance(usersTwoCopy);
             distances = calculateDistances(users, classificationUser);
+            neighbors = getNearestNeighbors(distances);
+            jobsWhoNeighborsAppliedForMap = getJobsNeighborsAppliedFor(neighbors);
+            
             
         }
     }

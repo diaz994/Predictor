@@ -195,14 +195,16 @@ public class TsvFileParser {
                     continue;
                 }
                 
-                if(lineNumber == 1704) {
-                    System.out.println("Hi");
-                }
-                
                 Job job = new Job();
                 
                 job.setJobId(Integer.parseInt(columns[0]));
                 job.setTitle(columns[1]);
+                job.setCity(columns[4]);
+                job.setState(columns[5]);
+                job.setCountry(columns[6]);
+                job.setZipCode(columns[7]);
+                job.setStartDate(columns[8]);
+                job.setEndDate(columns[9]);
                 
                 jobs.add(job);
             }  
