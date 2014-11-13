@@ -126,6 +126,12 @@ public class Predictor {
         
         return jobsInDateRange;
     }
+
+    private static Map<User, List<Job>> rankJobsNeighborsAppliedFor(Map<User, List<Job>> jobsWhoNeighborsAppliedForMap, JobsInDateRange jobsInDateRanges) {
+        Map<User, List<Job>> rankedJobs = new HashMap<User, List<Job>>();
+        
+        return rankedJobs;
+    }
     
     public Predictor() {
     }
@@ -460,11 +466,9 @@ public class Predictor {
         List<Job> jobsInT1 = null;
         List<Job> jobsInT2 = null;
         Map<User, List<Job>> jobsWhoNeighborsAppliedForMap = null;
+        Map<User, List<Job>> rankedJobsWhoNeighborsAppliedForMap = null;
         JobsInDateRange jobsInDateRanges = null;
- 
         User classificationUser = null;
-        
-        
         
         if(Constants.DEBUG) {
             
@@ -496,7 +500,7 @@ public class Predictor {
             distances = calculateDistances(users, classificationUser);
             neighbors = getNearestNeighbors(distances);
             jobsWhoNeighborsAppliedForMap = getJobsNeighborsAppliedFor(neighbors);
-            
+            rankedJobsWhoNeighborsAppliedForMap = rankJobsNeighborsAppliedFor(jobsWhoNeighborsAppliedForMap, jobsInDateRanges);
             
         }
     }

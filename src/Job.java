@@ -13,6 +13,16 @@ public class Job {
     private String ZipCode;
     private String StartDate;
     private String EndDate;
+    
+    private Integer rank;
+
+    public Integer getRank() {
+        return rank;
+    }
+
+    public void setRank(Integer rank) {
+        this.rank = rank;
+    }
 
     public Integer getJobId() {
         return JobId;
