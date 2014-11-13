@@ -1,0 +1,52 @@
+Below are some ideas for P2 that you may consider implementing. Several notes regarding this:
+
+ 
+
+-- We are not suggesting you should implement any of them. Those who do won't get any favor in grading.
+
+-- There can be many other (and maybe better) different ideas.
+
+-- We have given you maximum freedom in doing this assignment. You are highly encouraged to explore any reasonable idea.
+
+ 
+
+We also encourage students to post their design ideas and comment on each other's. (Source codes shouldn't be shared under any circumstance.)
+
+ 
+
+If we come across more ideas, we will post them here. We will also try to comment on your ideas if you post them.
+
+ 
+
+Note that, in finding top-150 possible applications, it’s impractical to explicitly enumerate all user-job pairs in the Cartesian product of U2 and jobs available in T2. These ideas can avoid enumerating the Cartesian product.
+
+ 
+
+idea 1:
+
+For each user u in U2, find its k-nearest-neighbor users. Assign a score to each job applied by u’s neighbor. 
+Then pick top m jobs by the scores as the potential applications for user u. Then rank potential applications of all users to get top 150 results.
+
+
+The distance/similarity measure between users can take into account one or more factors, including location proximity, eduction, work history, and so on. 
+The score on a job can be defined, say, by # of neighbors that applied to the job. 
+The count can be weighted by the similarity between u and its neighbors and/or the similarity between jobs’ features and users’ features.
+
+
+idea 2:
+
+Similar to idea 1. But we find k-nearest-neighbor for jobs. For each job j that a user u in U2 applied to, find k-nearest-neighbor of j among jobs available in T2. 
+Rank these k neighbor jobs and pick the top-m jobs as the potential applications for u. 
+Then rank all potential applications to get top 150 results.  
+Similarity measure and weighting can resort to ideas similar to the ones in idea 1. 
+(Of course the vanilla version of this idea has the limitation that it won't find jobs for u in U2 that didn't have applications during T1.)
+
+ 
+
+idea 3:
+
+Association rule mining (ARM) is not introduced yet. But if you already know it or if you are brave, 
+you can implement an ARM-based method to derive rules such as 
+“a user from California with a Bachelor’s degree and worked as Software Engineer tends to apply to a job titled Software Engineer in California”. 
+For each rule derived, assign a confidence score. For each user u in U2, find all the rules that u satisfies, and then find correspinding jobs that satisfy these rules. 
+Rank the jobs by the confidence scores of the rules.
